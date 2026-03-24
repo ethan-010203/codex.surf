@@ -7,466 +7,186 @@
     <title>Codex.surf 开发文档 - 高效、稳定的 GPT 接口</title>
     <meta name="description" content="Codex.surf 官方使用教程。提供稳定、高并发的 GPT 模型 API 分发服务，兼容 OpenAI 格式。">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&family=SF+Pro+Display:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-bg: linear-gradient(135deg, #e0f2fe 0%, #fce7f3 100%);
+            --bg-color: #fafcff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --gradient-start: #70b4ff;
+            --gradient-end: #ffa8cb;
+            --main-gradient: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
             --sidebar-width: 280px;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --accent: #0ea5e9;
-            --accent-hover: #0284c7;
-            --border-color: rgba(226, 232, 240, 0.6);
-            --content-bg: rgba(255, 255, 255, 0.75);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --shadow-sm: 0 4px 20px rgba(112, 180, 255, 0.08);
+            --shadow-md: 0 10px 40px rgba(255, 168, 203, 0.12);
+            --accent: var(--gradient-start);
+            --border-color: rgba(0, 0, 0, 0.05);
             --code-bg: #1e1e1e;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: var(--primary-bg);
-            background-attachment: fixed;
-            color: var(--text-main);
+        body, html {
+            margin: 0; padding: 0;
+            background: transparent;
+            color: var(--text-primary);
+            font-family: 'SF Pro Display', 'Outfit', -apple-system, sans-serif;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
-            display: flex;
-            justify-content: center;
+            overflow-x: hidden;
             min-height: 100vh;
         }
 
-        .layout-wrapper {
-            display: flex;
-            width: 100%;
-            max-width: 1300px;
+        /* Truly Visible Dynamic Background */
+        .ambient-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -2; background-color: var(--bg-color); overflow: hidden;
         }
 
-        /* Glassmorphism Sidebar */
-        .sidebar {
-            width: var(--sidebar-width);
-            height: 100vh;
-            position: sticky;
-            top: 0;
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-right: 1px solid var(--border-color);
-            padding: 2rem 1.5rem;
-            overflow-y: auto;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
+        .grid-bg {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background-image: 
+                linear-gradient(rgba(112, 180, 255, 0.15) 1.5px, transparent 1.5px),
+                linear-gradient(90deg, rgba(112, 180, 255, 0.15) 1.5px, transparent 1.5px);
+            background-size: 80px 80px;
+            animation: grid-pan 50s linear infinite;
+            -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+            mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
         }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-main);
-            text-decoration: none;
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            letter-spacing: -0.5px;
+        @keyframes grid-pan {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(80px) rotate(0.5deg); }
         }
 
-        .logo span {
-            background: linear-gradient(to right, #0ea5e9, #ec4899);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .orb {
+            position: absolute; border-radius: 50%; opacity: 0.6; filter: blur(100px);
+            animation: float-orb 20s infinite ease-in-out alternate;
         }
 
-        .nav-group {
-            margin-bottom: 1.5rem;
+        .orb-blue { top: -5%; left: 0; width: 600px; height: 600px; background: rgba(112, 180, 255, 0.4); animation-duration: 25s; }
+        .orb-pink { bottom: -5%; right: -5%; width: 700px; height: 700px; background: rgba(255, 168, 203, 0.4); animation-delay: -5s; animation-duration: 35s; }
+        .orb-purple { top: 35%; right: 15%; width: 500px; height: 500px; background: rgba(164, 132, 255, 0.25); animation-delay: -10s; animation-duration: 22s; }
+
+        @keyframes float-orb {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33% { transform: translate(60px, -40px) scale(1.1) rotate(5deg); }
+            66% { transform: translate(-30px, 40px) scale(0.9) rotate(-5deg); }
+            100% { transform: translate(0, 0) scale(1) rotate(0deg); }
         }
 
-        .nav-group-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .nav-link {
-            display: block;
-            padding: 0.5rem 0.75rem;
-            color: var(--text-main);
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-            margin-bottom: 0.25rem;
-        }
-
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.6);
-            color: var(--accent);
-        }
-
-        .nav-link.active {
-            background: rgba(255, 255, 255, 0.8);
-            color: var(--accent);
-            font-weight: 500;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            padding: 3rem 4rem;
-            display: flex;
-            justify-content: center;
-        }
-
-        .content-container {
-            width: 100%;
-            max-width: 950px;
-            background: var(--content-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 16px;
-            padding: 3rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
-        }
-
-        section {
-            margin-bottom: 4rem;
-            scroll-margin-top: 2rem;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            line-height: 1.2;
-            letter-spacing: -1px;
-        }
-
-        h2 {
-            font-size: 1.75rem;
-            font-weight: 600;
-            margin-bottom: 1.25rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border-color);
-            margin-top: 3rem;
-        }
-
-        h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-top: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        p {
-            margin-bottom: 1.25rem;
-            font-size: 1rem;
-            color: #334155;
-        }
-
-        /* Buttons & CTA */
-        .btn-primary {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.875rem 1.5rem;
-            font-size: 1rem;
-            font-weight: 500;
-            color: white;
-            background: linear-gradient(135deg, #0ea5e9, #6366f1);
-            border-radius: 8px;
-            text-decoration: none;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(14, 165, 233, 0.35);
-        }
-
-        /* Important block for CTA */
-        .conversion-box {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(24ce7f3, 0.4) 100%);
-            border-left: 4px solid var(--accent);
-            padding: 1.5rem;
-            border-radius: 0 8px 8px 0;
-            margin: 2rem 0;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-        }
-
-        .conversion-box h3 {
-            margin-top: 0;
-            color: var(--accent);
-        }
-
-        /* Code Blocks */
-        .code-block-wrapper {
-            position: relative;
-            margin: 1.5rem 0;
-            border-radius: 8px;
-            overflow: hidden;
-            background: var(--code-bg);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .code-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            color: #94a3b8;
-            font-size: 0.85rem;
-            font-family: monospace;
-        }
-
-        .copy-btn {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #94a3b8;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            transition: all 0.2s;
-        }
-
-        .copy-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-
-        pre {
-            margin: 0;
-            padding: 1rem;
-            overflow-x: auto;
-        }
-
-        code {
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 0.9rem;
-            background: rgba(0, 0, 0, 0.05);
-            padding: 0.2em 0.4em;
-            border-radius: 4px;
-            color: #db2777;
-        }
-
-        pre code {
-            background: transparent;
-            padding: 0;
-            color: #e2e8f0;
-            line-height: 1.5;
-        }
-
-        /* Lists */
-        ul,
-        ol {
-            margin-bottom: 1.25rem;
-            padding-left: 1.5rem;
-            color: #334155;
-        }
-
-        li {
-            margin-bottom: 0.5rem;
-        }
-
-        /* Content Links */
-        .content-container a:not(.btn-primary) {
-            color: #0ea5e9;
-            text-decoration: underline;
-            text-decoration-color: rgba(14, 165, 233, 0.3);
-            text-underline-offset: 4px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .content-container a:not(.btn-primary):hover {
-            color: #ec4899;
-            text-decoration-color: rgba(236, 72, 153, 0.6);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                left: 0;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 1rem;
-            }
-
-            .content-container {
-                padding: 1.5rem;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-        }
-
-        .floating-btn {
-            position: fixed;
-            top: 1.5rem;
-            right: 2rem;
-            z-index: 1000;
-            padding: 0.6rem 1.25rem;
-            background: linear-gradient(135deg, #0ea5e9, #ec4899);
-            color: white;
-            border-radius: 8px;
-            font-weight: 600;
-            text-decoration: none;
-            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .floating-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(14, 165, 233, 0.4);
-            color: white;
-        }
-
-        .vp-doc h1 {
-            font-size: 2.2rem;
-        }
-
-        .vp-doc h2 {
-            font-size: 1.6rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.5rem;
-            margin-top: 2rem;
-        }
-
-        .vp-doc h3 {
-            font-size: 1.3rem;
-            margin-top: 1.5rem;
-        }
-
-        .vp-doc img {
-            max-width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin: 1rem 0;
-        }
-
-        .vp-doc div[class*="language-"] {
-            position: relative;
-            background: var(--code-bg);
-            border-radius: 8px;
-            margin: 1.5rem 0;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .vp-doc div[class*="language-"] pre {
-            background: transparent;
-            margin: 0;
-            padding: 2.5rem 1rem 1rem 1rem;
-            overflow-x: auto;
-            color: white;
-            border-radius: 0;
-        }
-
-        .vp-doc .lang {
-            position: absolute;
-            top: 0.5rem;
-            left: 1rem;
-            font-size: 0.75rem;
-            color: #94a3b8;
-            font-family: monospace;
-            text-transform: uppercase;
-            z-index: 2;
+        .ambient-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, rgba(250, 252, 255, 0) 0%, rgba(250, 252, 255, 0.5) 100%);
             pointer-events: none;
         }
 
-        .vp-doc .copy {
-            position: absolute;
-            top: 0.4rem;
-            right: 0.6rem;
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #94a3b8;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            transition: all 0.2s;
-            z-index: 10;
+        /* Layout */
+        .content-wrap { position: relative; z-index: 1; display: flex; justify-content: center; width: 100%; }
+        .layout-wrapper { display: flex; width: 100%; max-width: 1400px; }
+
+        .sidebar {
+            width: var(--sidebar-width); height: 100vh; position: sticky; top: 0;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-color);
+            padding: 2.5rem 1.5rem; overflow-y: auto; z-index: 100;
+            display: flex; flex-direction: column;
         }
 
-        .vp-doc .copy::before {
-            content: "复制";
+        .logo {
+            font-size: 1.6rem; font-weight: 800; color: var(--text-primary);
+            text-decoration: none; margin-bottom: 2.5rem; display: flex; align-items: center; gap: 10px;
+            letter-spacing: -1px;
         }
 
-        .vp-doc .copy:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+        .logo span { background: var(--main-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .nav-group { margin-bottom: 2rem; }
+        .nav-group-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary); font-weight: 700; margin-bottom: 0.8rem; padding-left: 0.75rem; }
+        .nav-link { 
+            display: block; padding: 0.6rem 0.8rem; color: var(--text-secondary); text-decoration: none; 
+            border-radius: 10px; font-size: 0.95rem; font-weight: 500; transition: all 0.2s ease; margin-bottom: 0.3rem;
+        }
+        .nav-link:hover { background: rgba(112, 180, 255, 0.1); color: var(--gradient-start); }
+        .nav-link.active { background: #fff; color: var(--gradient-start); font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+
+        .main-content { flex: 1; padding: 3.5rem 4rem; display: flex; justify-content: center; }
+        .content-container {
+            width: 100%; max-width: 900px; background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 24px;
+            padding: 4rem; box-shadow: var(--shadow-md);
         }
 
-        .vp-doc .copy.copied {
-            color: #10b981;
-            border-color: rgba(16, 185, 129, 0.5);
+        section { margin-bottom: 5rem; scroll-margin-top: 2rem; }
+        h1 { font-size: 3rem; font-weight: 800; margin-bottom: 1.5rem; letter-spacing: -1.5px; }
+        h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem; margin-top: 4rem; padding-bottom: 0.5rem; border-bottom: 2px solid rgba(112, 180, 255, 0.15); }
+        h3 { font-size: 1.35rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1.2rem; }
+        p { margin-bottom: 1.5rem; font-size: 1.05rem; color: #4b5563; }
+
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;
+            background: var(--main-gradient); color: white; border-radius: 12px;
+            font-weight: 600; text-decoration: none; transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(255, 168, 203, 0.3);
+        }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(112, 180, 255, 0.4); }
+
+        .conversion-box {
+            background: rgba(255, 255, 255, 0.6); border-left: 5px solid var(--gradient-start);
+            padding: 2.5rem; border-radius: 16px; margin: 2.5rem 0; box-shadow: var(--shadow-sm);
         }
 
-        .vp-doc .copy.copied::before {
-            content: "已复制!";
+        .floating-btn {
+            position: fixed; top: 1.5rem; right: 2rem; z-index: 1000; padding: 11px 24px;
+            background: var(--main-gradient); color: white; border-radius: 24px;
+            font-weight: 600; text-decoration: none; box-shadow: 0 8px 16px rgba(112, 180, 255, 0.3);
+            transition: all 0.3s;
         }
+        .floating-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(112, 180, 255, 0.4); }
 
-        .vp-doc .language-bash,
-        .vp-doc .language-sh,
-        .vp-doc .language-json {
-            font-family: 'Consolas', monospace;
+        /* Document-Specific Enhancements */
+        .vp-doc h1 { font-size: 2.4rem; letter-spacing: -1.5px; }
+        .vp-doc h2 { border-bottom: 2px solid rgba(112, 180, 255, 0.1); margin-top: 4rem; }
+        .vp-doc img { max-width: 100%; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin: 2rem 0; }
+        .vp-doc div[class*="language-"] { position: relative; background: #1a1b26; border-radius: 16px; margin: 2.5rem 0; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.15); }
+        .vp-doc div[class*="language-"] pre { background: transparent; padding: 3rem 1.5rem 1.5rem; overflow-x: auto; color: #fff; }
+        .vp-doc .lang { position: absolute; top: 0.8rem; left: 1.2rem; font-size: 0.75rem; color: #94a3b8; font-family: monospace; text-transform: uppercase; z-index: 2; opacity: 0.7; }
+        .vp-doc .copy { position: absolute; top: 0.6rem; right: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; z-index: 10; }
+        .vp-doc .copy:hover { background: rgba(255,255,255,0.15); }
+        .vp-doc table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 2.5rem 0; border: 1px solid rgba(0,0,0,0.04); border-radius: 16px; overflow: hidden; }
+        .vp-doc th { background: rgba(0,0,0,0.02); padding: 1rem; text-align: left; font-weight: 700; border-bottom: 2px solid rgba(0,0,0,0.03); }
+        .vp-doc td { padding: 1rem; border-bottom: 1px solid rgba(0,0,0,0.03); }
+        .vp-doc tr:last-child td { border-bottom: none; }
+        
+        @media (max-width: 968px) {
+            .sidebar { transform: translateX(-100%); position: fixed; }
+            .main-content { padding: 2rem 1rem; }
+            .content-container { padding: 2rem 1rem; }
+            h1 { font-size: 2.4rem; }
         }
-
-        .vp-doc p {
-            line-height: 1.6;
-        }
-
-        .vp-doc ul,
-        .vp-doc ol {
-            padding-left: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .vp-doc li {
-            margin-bottom: 0.5rem;
-        }
-
-        .vp-doc table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 1rem;
-        }
-
-        .vp-doc th,
-        .vp-doc td {
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            padding: 0.5rem;
-            text-align: left;
-        }
-
-        /* Fix images that start with / to the absolute URL */
     </style>
 
 </head>
 
 <body>
-    <div class="layout-wrapper">
+    <!-- Background engine -->
+    <div class="ambient-bg">
+        <div class="grid-bg"></div>
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-pink"></div>
+        <div class="orb orb-purple"></div>
+        <div class="ambient-overlay"></div>
+    </div>
+
+    <!-- Layout Wrapper inside content-wrap -->
+    <div class="content-wrap">
+        <div class="layout-wrapper">
+
         <a href="https://codex.surf/" target="_blank" class="floating-btn">Codex.surf 主站</a>
 
         <!-- Sidebar -->
