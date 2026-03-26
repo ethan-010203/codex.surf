@@ -74,10 +74,15 @@ const ROLE_ADMIN_USER = 10
 const USER_STATUS_ENABLED = 1
 const NETWORK_RETRY_ATTEMPTS = 3
 const NETWORK_RETRY_DELAY_MS = 350
+const DEFAULT_NEWAPI_BASE_URL = 'https://codex.surf'
+const DEFAULT_NEWAPI_ADMIN_USERNAME = 'ethan2'
+const DEFAULT_NEWAPI_ADMIN_PASSWORD = 'ethan2ethan2'
 
 function getNewApiBaseUrl(): string {
   const baseUrl =
-    process.env.NEWAPI_BASE_URL?.trim() ?? process.env.NEXT_PUBLIC_NEWAPI_BASE_URL?.trim() ?? ''
+    process.env.NEWAPI_BASE_URL?.trim()
+    ?? process.env.NEXT_PUBLIC_NEWAPI_BASE_URL?.trim()
+    ?? DEFAULT_NEWAPI_BASE_URL
 
   if (!baseUrl) {
     throw new Error('Missing NEWAPI_BASE_URL. Please configure the newapi server address first.')
@@ -504,8 +509,8 @@ function getConfiguredAdminAccessToken() {
 }
 
 function getConfiguredAdminCredentials() {
-  const username = process.env.NEWAPI_ADMIN_USERNAME?.trim() ?? ''
-  const password = process.env.NEWAPI_ADMIN_PASSWORD ?? ''
+  const username = process.env.NEWAPI_ADMIN_USERNAME?.trim() ?? DEFAULT_NEWAPI_ADMIN_USERNAME
+  const password = process.env.NEWAPI_ADMIN_PASSWORD ?? DEFAULT_NEWAPI_ADMIN_PASSWORD
 
   if (!username || !password) {
     return null
